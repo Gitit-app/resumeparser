@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Parser POC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: rgba(59, 130, 246, 0.1);
+            backdrop-filter: blur(10px);
+            color: #1e40af;
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+        
+        .main-content {
+            padding: 40px;
+            color: #1f2937;
+        }
+        
+        .upload-section {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 2px dashed rgba(59, 130, 246, 0.3);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section:hover {
+            border-color: rgba(59, 130, 246, 0.6);
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        .upload-section.dragover {
+            border-color: rgba(59, 130, 246, 0.8);
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            color: rgba(59, 130, 246, 0.6);
+            margin-bottom: 20px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-input-button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #3b82f6;
+            backdrop-filter: blur(10px);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border: 1px solid #2563eb;
+        }
+        
+        .file-input-button:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .method-selection {
+            margin: 20px 0;
+        }
+        
+        .method-options {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .method-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .method-option:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .method-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3b82f6;
+        }
+        
+        .parse-button {
+            background: #3b82f6;
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 1px solid #2563eb;
+            padding: 16px 40px;
+            font-size: 1.1em;
+            font-weight: 500;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+        }
+        
+        .parse-button:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+        }
+        
+        .parse-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .results-section {
+            margin-top: 30px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            display: none;
+        }
+        
+        .results-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #1f2937;
+            font-weight: 500;
+        }
+        
+        .tab-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .json-display {
+            background: #f8fafc;
+            backdrop-filter: blur(10px);
+            color: #1f2937;
+            padding: 20px;
+            border-radius: 16px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .success {
+            background: #2ecc71;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .file-info {
+            background: rgba(59, 130, 246, 0.1);
+            backdrop-filter: blur(10px);
+            color: #1f2937;
+            padding: 12px 20px;
+            border-radius: 16px;
+            margin: 15px 0;
+            display: inline-block;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Resume Parser</h1>
+            <p>Upload your resume and extract structured information using advanced parsing technology</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">⬆</div>
+                <h3>Upload Resume</h3>
+                <p>Drag & drop or click to browse</p>
+                <p><small>PDF, DOCX, TXT • Max 16MB</small></p>
+                
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="fileInput" name="file" class="file-input" accept=".pdf,.docx,.txt">
+                        <label for="fileInput" class="file-input-button">Choose File</label>
+                    </div>
+                    
+                    <div class="method-selection">
+                        <h4>Parsing Method</h4>
+                        <div class="method-options" id="methodOptions">
+                            <div class="method-option">
+                                <input type="radio" id="methodRule" name="method" value="rule" checked>
+                                <label for="methodRule">Pattern Matching</label>
+                            </div>
+                            <div class="method-option" id="semanticOption">
+                                <input type="radio" id="methodSemantic" name="method" value="semantic">
+                                <label for="methodSemantic">AI Analysis</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="parse-button" id="parseButton" disabled>
+                        Parse Resume
+                    </button>
+                </form>
+                
+                <div id="fileInfo"></div>
+            </div>
+            
+            <div class="results-section" id="resultsSection">
+                <h3>Results</h3>
+                
+                <div class="results-tabs" id="resultsTabs">
+                    <!-- Tabs will be generated dynamically -->
+                </div>
+                
+                <div id="tabsContent">
+                    <!-- Tab content will be generated dynamically -->
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const parseButton = document.getElementById('parseButton');
+        const fileInfo = document.getElementById('fileInfo');
+        const resultsSection = document.getElementById('resultsSection');
+        const uploadForm = document.getElementById('uploadForm');
+        
+        // Check semantic parsing availability
+        fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                const semanticOption = document.getElementById('semanticOption');
+                if (!data.parsing_methods.includes('semantic')) {
+                    semanticOption.style.display = 'none';
+                    console.log('Semantic parsing not available');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking parsing methods:', error);
+            });
+        
+        // File drag and drop functionality
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+        
+        // File input change handler
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                const fileSize = (file.size / 1024).toFixed(2);
+                fileInfo.innerHTML = `
+                    <div class="file-info">
+                        📁 ${file.name} (${fileSize} KB)
+                    </div>
+                `;
+                parseButton.disabled = false;
+            } else {
+                fileInfo.innerHTML = '';
+                parseButton.disabled = true;
+            }
+        }
+        
+        // Form submission
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file first.');
+                return;
+            }
+            
+            const formData = new FormData(uploadForm);
+            
+            // Show loading state
+            showLoading();
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResults(result);
+                } else {
+                    showError(result.error || 'An error occurred while parsing the resume.');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        });
+        
+        function showLoading() {
+            resultsSection.style.display = 'block';
+            resultsSection.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <h3>🔄 Parsing your resume...</h3>
+                    <p>This may take a few seconds depending on the parsing method selected.</p>
+                </div>
+            `;
+        }
+        
+        function showError(message) {
+            resultsSection.style.display = 'block';
+            resultsSection.innerHTML = `
+                <div class="error">
+                    <h3>❌ Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        function showResults(data) {
+            const method = document.querySelector('input[name="method"]:checked').value;
+            
+            let tabsHtml = '';
+            let contentHtml = '';
+            
+            tabsHtml = `
+                <button class="tab-button active" onclick="showTab('results')">Parsing Results</button>
+                <button class="tab-button" onclick="showTab('raw')">Raw JSON</button>
+            `;
+            
+            const methodName = method === 'rule' ? 'Pattern Matching' : 'AI Semantic Analysis';
+            contentHtml = `
+                <div id="tab-results" class="tab-content active">
+                    <h4>📊 ${methodName} Results</h4>
+                    <div class="json-display">${JSON.stringify(data, null, 2)}</div>
+                </div>
+                <div id="tab-raw" class="tab-content">
+                    <h4>📄 Raw JSON Output</h4>
+                    <div class="json-display">${JSON.stringify(data, null, 2)}</div>
+                </div>
+            `;
+            
+            resultsSection.innerHTML = `
+                <div class="success">
+                    <h3>✅ Resume parsed successfully!</h3>
+                    <p>Results are displayed below in different views.</p>
+                </div>
+                
+                <div class="results-tabs">
+                    ${tabsHtml}
+                </div>
+                
+                <div id="tabsContent">
+                    ${contentHtml}
+                </div>
+            `;
+            
+            resultsSection.style.display = 'block';
+        }
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(button => button.classList.remove('active'));
+            
+            // Show selected tab
+            const selectedContent = document.getElementById(`tab-${tabName}`);
+            if (selectedContent) {
+                selectedContent.classList.add('active');
+            }
+            
+            // Activate clicked button
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
