@@ -352,11 +352,16 @@
                 const semanticOption = document.getElementById('semanticOption');
                 if (!data.parsing_methods.includes('semantic')) {
                     semanticOption.style.display = 'none';
-                    console.log('Semantic parsing not available');
+                    console.log('Semantic parsing not available - dependencies missing');
+                } else {
+                    console.log('Semantic parsing available');
                 }
             })
             .catch(error => {
                 console.error('Error checking parsing methods:', error);
+                // Hide semantic option if health check fails
+                const semanticOption = document.getElementById('semanticOption');
+                semanticOption.style.display = 'none';
             });
         
         // File drag and drop functionality

@@ -80,42 +80,22 @@ def upload_file():
                 results = rule_parser.parse(text)
             
             elif parsing_method == 'semantic':
-                # Try to use semantic parser, fall back to enhanced rule-based
+                # Use semantic parser only - no fallback
                 try:
                     from semantic_parser import SemanticParser
                     semantic_parser = SemanticParser()
                     results = semantic_parser.parse(text)
                 except ImportError as e:
-                    app.logger.warning(f"Semantic parser not available: {e}. Using enhanced rule-based parsing.")
-                    # Fall back to enhanced rule-based parsing
-                    rule_parser = RuleBasedParser()
-                    results = rule_parser.parse(text)
-                    
-                    # Add semantic metadata and confidence scores
-                    results['metadata'] = {
-                        'parsing_method': 'semantic_demo',
-                        'model_used': 'enhanced_rule_based',
-                        'text_length': len(text),
-                        'chunks_processed': len(text.split('\\n\\n')),
-                        'semantic_scores': {
-                            'skills_confidence': 0.92,
-                            'education_confidence': 0.88,
-                            'experience_confidence': 0.95,
-                            'projects_confidence': 0.91,
-                            'certifications_confidence': 0.87
-                        }
-                    }
-                    
-                    # Add confidence scores to skills
-                    enhanced_skills = []
-                    for i, skill in enumerate(results.get('skills', [])):
-                        enhanced_skills.append({
-                            'name': skill,
-                            'confidence': 0.85 + (i % 15) / 100.0,
-                            'category': categorize_skill_demo(skill)
-                        })
-                    
-                    results['skills'] = enhanced_skills[:20]
+                    return jsonify({
+                        'error': 'Semantic parsing is not available. Missing dependencies: sentence-transformers, faiss-cpu, torch, transformers. Please use rule-based parsing instead.',
+                        'missing_dependencies': ['sentence-transformers', 'faiss-cpu', 'torch', 'transformers'],
+                        'suggested_action': 'Use rule-based parsing method'
+                    }), 400
+                except Exception as e:
+                    return jsonify({
+                        'error': f'Semantic parsing failed: {str(e)}',
+                        'suggested_action': 'Use rule-based parsing method'
+                    }), 500
             
             else:
                 return jsonify({'error': f'Invalid parsing method: {parsing_method}'}), 400
@@ -155,7 +135,7 @@ def health_check():
         available_methods.append('semantic')
         semantic_status = 'available'
     except ImportError:
-        semantic_status = 'fallback_to_demo'
+        semantic_status = 'unavailable'
     
     return jsonify({
         'status': 'healthy',
