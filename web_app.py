@@ -176,4 +176,8 @@ if __name__ == '__main__':
     print("🧠 Semantic parsing: Demo mode (enhanced rule-based)")
     print("=" * 60)
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get port from environment for production deployment
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(debug=debug, host='0.0.0.0', port=port)
