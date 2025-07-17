@@ -144,3 +144,4 @@ uploads/
 *.txt
 !examples/*.txt
 !README.md
+!requirements.txt

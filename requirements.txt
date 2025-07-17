@@ -1,0 +1,27 @@
+# Resume Parser POC - Production Requirements
+
+# Core dependencies
+numpy>=1.21.0
+scikit-learn>=1.0.0
+flask>=2.0.0
+werkzeug>=2.0.0
+
+# Text processing
+nltk>=3.7
+
+# File processing (Required)
+PyMuPDF>=1.20.0        # PDF text extraction
+python-docx>=0.8.11    # DOCX document processing
+
+# Semantic parsing dependencies (Required for semantic mode)
+sentence-transformers>=2.2.0  # Pre-trained transformer models
+faiss-cpu>=1.7.2              # FAISS similarity search (CPU version)
+torch>=1.9.0                  # PyTorch backend
+transformers>=4.20.0          # Hugging Face transformers
+tokenizers>=0.12.0            # Fast tokenization
+
+# Data manipulation
+pandas>=1.3.0          # Data analysis
+
+# Production deployment
+gunicorn>=20.1.0       # WSGI HTTP Server
