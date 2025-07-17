@@ -13,7 +13,7 @@ nltk>=3.7
 PyMuPDF>=1.20.0        # PDF text extraction
 python-docx>=0.8.11    # DOCX document processing
 
-# Semantic parsing dependencies (Required for semantic mode)
+# Semantic parsing dependencies (Optional - will gracefully fall back)
 sentence-transformers>=2.2.0  # Pre-trained transformer models
 faiss-cpu>=1.7.2              # FAISS similarity search (CPU version)
 torch>=1.9.0                  # PyTorch backend

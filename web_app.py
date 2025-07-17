@@ -80,35 +80,42 @@ def upload_file():
                 results = rule_parser.parse(text)
             
             elif parsing_method == 'semantic':
-                # For demo, create enhanced semantic-style results
-                rule_parser = RuleBasedParser()
-                results = rule_parser.parse(text)
-                
-                # Add semantic metadata and confidence scores
-                results['metadata'] = {
-                    'parsing_method': 'semantic_faiss',
-                    'model_used': 'all-MiniLM-L6-v2',
-                    'text_length': len(text),
-                    'chunks_processed': len(text.split('\\n\\n')),
-                    'semantic_scores': {
-                        'skills_confidence': 0.92,
-                        'education_confidence': 0.88,
-                        'experience_confidence': 0.95,
-                        'projects_confidence': 0.91,
-                        'certifications_confidence': 0.87
+                # Try to use semantic parser, fall back to enhanced rule-based
+                try:
+                    from semantic_parser import SemanticParser
+                    semantic_parser = SemanticParser()
+                    results = semantic_parser.parse(text)
+                except ImportError as e:
+                    app.logger.warning(f"Semantic parser not available: {e}. Using enhanced rule-based parsing.")
+                    # Fall back to enhanced rule-based parsing
+                    rule_parser = RuleBasedParser()
+                    results = rule_parser.parse(text)
+                    
+                    # Add semantic metadata and confidence scores
+                    results['metadata'] = {
+                        'parsing_method': 'semantic_demo',
+                        'model_used': 'enhanced_rule_based',
+                        'text_length': len(text),
+                        'chunks_processed': len(text.split('\\n\\n')),
+                        'semantic_scores': {
+                            'skills_confidence': 0.92,
+                            'education_confidence': 0.88,
+                            'experience_confidence': 0.95,
+                            'projects_confidence': 0.91,
+                            'certifications_confidence': 0.87
+                        }
                     }
-                }
-                
-                # Add confidence scores to skills
-                enhanced_skills = []
-                for i, skill in enumerate(results.get('skills', [])):
-                    enhanced_skills.append({
-                        'name': skill,
-                        'confidence': 0.85 + (i % 15) / 100.0,
-                        'category': categorize_skill_demo(skill)
-                    })
-                
-                results['skills'] = enhanced_skills[:20]
+                    
+                    # Add confidence scores to skills
+                    enhanced_skills = []
+                    for i, skill in enumerate(results.get('skills', [])):
+                        enhanced_skills.append({
+                            'name': skill,
+                            'confidence': 0.85 + (i % 15) / 100.0,
+                            'category': categorize_skill_demo(skill)
+                        })
+                    
+                    results['skills'] = enhanced_skills[:20]
             
             else:
                 return jsonify({'error': f'Invalid parsing method: {parsing_method}'}), 400
@@ -140,11 +147,22 @@ def api_parse():
 @app.route('/health')
 def health_check():
     """Health check endpoint."""
+    # Check available parsing methods
+    available_methods = ['rule']
+    
+    try:
+        from semantic_parser import SemanticParser
+        available_methods.append('semantic')
+        semantic_status = 'available'
+    except ImportError:
+        semantic_status = 'fallback_to_demo'
+    
     return jsonify({
         'status': 'healthy',
         'service': 'resume-parser-poc',
         'supported_formats': list(ALLOWED_EXTENSIONS),
-        'parsing_methods': ['rule', 'semantic']
+        'parsing_methods': available_methods,
+        'semantic_status': semantic_status
     })
 
 def categorize_skill_demo(skill):

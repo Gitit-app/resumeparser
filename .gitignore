@@ -145,3 +145,4 @@ uploads/
 !examples/*.txt
 !README.md
 !requirements.txt
+!requirements-minimal.txt
