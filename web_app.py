@@ -80,22 +80,18 @@ def upload_file():
                 results = rule_parser.parse(text)
             
             elif parsing_method == 'semantic':
-                # Use semantic parser only - no fallback
-                try:
-                    from semantic_parser import SemanticParser
-                    semantic_parser = SemanticParser()
-                    results = semantic_parser.parse(text)
-                except ImportError as e:
-                    return jsonify({
-                        'error': 'Semantic parsing is not available. Missing dependencies: sentence-transformers, faiss-cpu, torch, transformers. Please use rule-based parsing instead.',
-                        'missing_dependencies': ['sentence-transformers', 'faiss-cpu', 'torch', 'transformers'],
-                        'suggested_action': 'Use rule-based parsing method'
-                    }), 400
-                except Exception as e:
-                    return jsonify({
-                        'error': f'Semantic parsing failed: {str(e)}',
-                        'suggested_action': 'Use rule-based parsing method'
-                    }), 500
+                # Semantic parsing not available in this deployment
+                return jsonify({
+                    'error': 'Semantic parsing is not available in this deployment to optimize memory usage and performance. Please use rule-based parsing instead.',
+                    'reason': 'Memory optimization - semantic parsing requires heavy ML dependencies',
+                    'suggested_action': 'Use rule-based parsing method',
+                    'rule_based_benefits': [
+                        'Fast processing (< 1 second)',
+                        'Low memory usage',
+                        'High accuracy for structured resumes',
+                        'Reliable and stable'
+                    ]
+                }), 400
             
             else:
                 return jsonify({'error': f'Invalid parsing method: {parsing_method}'}), 400
@@ -127,22 +123,13 @@ def api_parse():
 @app.route('/health')
 def health_check():
     """Health check endpoint."""
-    # Check available parsing methods
-    available_methods = ['rule']
-    
-    try:
-        from semantic_parser import SemanticParser
-        available_methods.append('semantic')
-        semantic_status = 'available'
-    except ImportError:
-        semantic_status = 'unavailable'
-    
     return jsonify({
         'status': 'healthy',
         'service': 'resume-parser-poc',
         'supported_formats': list(ALLOWED_EXTENSIONS),
-        'parsing_methods': available_methods,
-        'semantic_status': semantic_status
+        'parsing_methods': ['rule'],
+        'semantic_status': 'disabled_for_performance',
+        'message': 'Optimized for rule-based parsing - fast, reliable, and memory-efficient'
     })
 
 def categorize_skill_demo(skill):
